@@ -207,10 +207,11 @@ await Promise.all(Array.from({ length: 4 }, async () => {
 await mkdir('.thumbnail-cache', { recursive: true });
 await writeFile(cachePath, JSON.stringify([...lookups].filter(([, entry]) => entry)));
 const thumbnails = posts.map(post => post.noteImage ? '' : post.directThumbnail || lookups.get(post.link)?.thumbnail);
-const papers = posts.map((post, index) => {
+const pilePosts = posts.slice(0, 50);
+const papers = pilePosts.map((post, index) => {
   const thumbnail = post.noteImage || thumbnails[index];
   return `
-      <a class="paper" href="${escape(post.link)}" lang="${escape(post.lang)}"${thumbnail ? ` aria-label="${escape(post.title)}"` : ''}>
+      <a class="paper" style="--paper-layer: ${-index}" href="${escape(post.link)}" lang="${escape(post.lang)}"${thumbnail ? ` aria-label="${escape(post.title)}"` : ''}>
         <span>${escape(post.title)}</span>
         ${thumbnail ? `<img class="thumbnail" src="${escape(thumbnail)}" alt="" decoding="async">` : ''}
       </a>`;
@@ -244,7 +245,7 @@ await writeFile('dist/index.html', `<!doctype html>
     <header><h1>${escape(title)}</h1></header>
     ${posts.length ? `<section id="pile-view" aria-label="Pile of posts">
       <button id="sweep" type="button" aria-controls="blog-view" hidden><span aria-hidden="true">🧹</span> Sort the pile</button>
-      <div class="pile">${papers}
+      <div class="pile" style="--paper-count: ${pilePosts.length}">${papers}
       </div>
     </section>` : ''}
     <section id="blog-view"${posts.length ? ' hidden' : ''}>

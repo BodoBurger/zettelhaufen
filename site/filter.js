@@ -28,6 +28,17 @@ function filterPosts() {
 }
 
 if (posts.length) {
+  const pile = document.querySelector('.pile');
+  const rotation = Math.random() * 2 * Math.PI;
+  const angleStep = Math.PI * (3 - Math.sqrt(5));
+  for (const [index, paper] of [...pile.children].entries()) {
+    const radius = Math.sqrt(index / Math.max(1, pile.children.length - 1)) * (.87 + .13 * Math.random());
+    const angle = rotation + index * angleStep + (Math.random() - .5) * 1.6;
+    paper.style.setProperty('--paper-x', `${50 + 50 * radius * Math.cos(angle)}%`);
+    paper.style.setProperty('--paper-y', `${50 + 50 * radius * Math.sin(angle)}%`);
+    paper.style.setProperty('--paper-tilt', `${(Math.random() - .5) * 48}deg`);
+  }
+  pile.classList.add('laid-out');
   search.addEventListener('input', filterPosts);
   tag.addEventListener('change', filterPosts);
   filters.hidden = false;
@@ -36,7 +47,7 @@ if (posts.length) {
   sweep.addEventListener('click', () => {
     const pileView = document.querySelector('#pile-view');
     const animate = !matchMedia('(prefers-reduced-motion: reduce)').matches && typeof sweep.animate === 'function';
-    const papers = animate ? [...pileView.querySelectorAll('.paper')].flatMap((paper, index) => {
+    const papers = animate ? [...pile.children].flatMap((paper, index) => {
       const image = paper.querySelector('.thumbnail:not([hidden])');
       const start = (image || paper).getBoundingClientRect();
       if (start.bottom <= 0 || start.top >= innerHeight) return [];
@@ -44,7 +55,7 @@ if (posts.length) {
       const destination = [...article.querySelectorAll('.thumbnail:not([hidden]), .notes img')]
         .find(candidate => image && candidate.src === image.src) || article.querySelector('h2 a');
       return [{ start, destination, image, source: image || paper.querySelector('span') }];
-    }) : [];
+    }).reverse() : [];
 
     pileView.hidden = true;
     document.querySelector('#blog-view').hidden = false;
@@ -65,7 +76,7 @@ if (posts.length) {
       const flight = flyer.animate([
         { transform: 'none' },
         { transform: `translate(${end.left - start.left}px, ${end.top - start.top}px) scale(${end.width / start.width}, ${end.height / start.height})` },
-      ], { duration: 520, easing: 'cubic-bezier(.22, .7, .25, 1)', fill: 'forwards' });
+      ], { duration: 850, easing: 'cubic-bezier(.22, .7, .25, 1)', fill: 'forwards' });
       const finish = () => {
         flyer.remove();
         destination.classList.remove('receiving-paper');
