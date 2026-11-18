@@ -207,6 +207,14 @@ await Promise.all(Array.from({ length: 4 }, async () => {
 await mkdir('.thumbnail-cache', { recursive: true });
 await writeFile(cachePath, JSON.stringify([...lookups].filter(([, entry]) => entry)));
 const thumbnails = posts.map(post => post.noteImage ? '' : post.directThumbnail || lookups.get(post.link)?.thumbnail);
+const papers = posts.map((post, index) => {
+  const thumbnail = post.noteImage || thumbnails[index];
+  return `
+      <a class="paper" href="${escape(post.link)}" lang="${escape(post.lang)}"${thumbnail ? ` aria-label="${escape(post.title)}"` : ''}>
+        <span>${escape(post.title)}</span>
+        ${thumbnail ? `<img class="thumbnail" src="${escape(thumbnail)}" alt="" decoding="async">` : ''}
+      </a>`;
+}).join('');
 const articles = posts.map((post, index) => `
     <article lang="${escape(post.lang)}">
       <div class="dates"><time datetime="${post.date}">${post.date}</time>${post.sourceDate ? `
@@ -229,17 +237,25 @@ await writeFile('dist/index.html', `<!doctype html>
   <title>${escape(title)}</title>
   <link rel="stylesheet" href="./style.css">
   <script src="./filter.js" defer></script>
+  ${posts.length ? '<noscript><style>#pile-view { display: none; } #blog-view[hidden] { display: block !important; }</style></noscript>' : ''}
 </head>
 <body>
   <main>
     <header><h1>${escape(title)}</h1></header>
-    <div id="filters" lang="en" hidden>
-      <label>Search <input id="search" type="search"></label>
-      <label>Tag <select id="tag"><option value="">All tags</option>${tagOptions}</select></label>
-    </div>
-    <p id="results" role="status" lang="en">${posts.length ? '' : 'No posts yet.'}</p>
-    <div id="posts">${articles}
-    </div>
+    ${posts.length ? `<section id="pile-view" aria-label="Pile of posts">
+      <button id="sweep" type="button" aria-controls="blog-view" hidden><span aria-hidden="true">🧹</span> Sort the pile</button>
+      <div class="pile">${papers}
+      </div>
+    </section>` : ''}
+    <section id="blog-view"${posts.length ? ' hidden' : ''}>
+      <div id="filters" lang="en" hidden>
+        <label>Search <input id="search" type="search"></label>
+        <label>Tag <select id="tag"><option value="">All tags</option>${tagOptions}</select></label>
+      </div>
+      <p id="results" role="status" lang="en">${posts.length ? '' : 'No posts yet.'}</p>
+      <div id="posts">${articles}
+      </div>
+    </section>
   </main>
 </body>
 </html>

@@ -2,6 +2,7 @@ const filters = document.querySelector('#filters');
 const search = document.querySelector('#search');
 const tag = document.querySelector('#tag');
 const results = document.querySelector('#results');
+const sweep = document.querySelector('#sweep');
 const normalize = value => value.normalize('NFC').toLowerCase();
 
 for (const thumbnail of document.querySelectorAll('.thumbnail')) {
@@ -31,4 +32,45 @@ if (posts.length) {
   tag.addEventListener('change', filterPosts);
   filters.hidden = false;
   filterPosts();
+  sweep.hidden = false;
+  sweep.addEventListener('click', () => {
+    const pileView = document.querySelector('#pile-view');
+    const animate = !matchMedia('(prefers-reduced-motion: reduce)').matches && typeof sweep.animate === 'function';
+    const papers = animate ? [...pileView.querySelectorAll('.paper')].flatMap((paper, index) => {
+      const image = paper.querySelector('.thumbnail:not([hidden])');
+      const start = (image || paper).getBoundingClientRect();
+      if (start.bottom <= 0 || start.top >= innerHeight) return [];
+      const article = posts[index].article;
+      const destination = [...article.querySelectorAll('.thumbnail:not([hidden]), .notes img')]
+        .find(candidate => image && candidate.src === image.src) || article.querySelector('h2 a');
+      return [{ start, destination, image, source: image || paper.querySelector('span') }];
+    }) : [];
+
+    pileView.hidden = true;
+    document.querySelector('#blog-view').hidden = false;
+    search.focus({ preventScroll: true });
+
+    for (const { start, destination, image, source } of papers) {
+      const end = destination.getBoundingClientRect();
+      if (!end.width || !end.height) continue;
+      const flyer = source.cloneNode(true);
+      flyer.className = image ? 'flying-thumbnail' : 'flying-note';
+      flyer.setAttribute('aria-hidden', 'true');
+      Object.assign(flyer.style, {
+        left: `${start.left}px`, top: `${start.top}px`,
+        width: `${start.width}px`, height: `${start.height}px`,
+      });
+      document.body.append(flyer);
+      destination.classList.add('receiving-paper');
+      const flight = flyer.animate([
+        { transform: 'none' },
+        { transform: `translate(${end.left - start.left}px, ${end.top - start.top}px) scale(${end.width / start.width}, ${end.height / start.height})` },
+      ], { duration: 520, easing: 'cubic-bezier(.22, .7, .25, 1)', fill: 'forwards' });
+      const finish = () => {
+        flyer.remove();
+        destination.classList.remove('receiving-paper');
+      };
+      flight.finished.then(finish, finish);
+    }
+  });
 }
