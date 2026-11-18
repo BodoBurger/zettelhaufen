@@ -1,0 +1,47 @@
+name: Publish Zettelhaufen
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - run: npm ci
+      - name: Restore thumbnail lookups
+        uses: actions/cache/restore@v5
+        with:
+          path: .thumbnail-cache
+          key: thumbnail-lookups-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: thumbnail-lookups-v1-
+      - run: npm run build
+      - name: Save thumbnail lookups
+        uses: actions/cache/save@v5
+        with:
+          path: .thumbnail-cache
+          key: thumbnail-lookups-v1-${{ github.run_id }}-${{ github.run_attempt }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+      - uses: actions/deploy-pages@v4
+        id: deployment
