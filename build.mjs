@@ -242,9 +242,15 @@ await writeFile('dist/index.html', `<!doctype html>
 </head>
 <body>
   <main>
-    <header><h1>${escape(title)}</h1></header>
+    <header>
+      <h1>${escape(title)}</h1>
+      ${posts.length ? `<div id="pile-controls" hidden>
+        <button class="view-button" id="reshuffle" type="button">Reshuffle</button>
+        <button class="view-button" id="sweep" type="button" aria-controls="blog-view"><span aria-hidden="true">🧹</span> Sort the pile</button>
+      </div>
+      <button class="view-button" id="back-to-pile" type="button" aria-controls="pile-view" hidden>Back to pile</button>` : ''}
+    </header>
     ${posts.length ? `<section id="pile-view" aria-label="Pile of posts">
-      <button id="sweep" type="button" aria-controls="blog-view" hidden><span aria-hidden="true">🧹</span> Sort the pile</button>
       <div class="pile" style="--paper-count: ${pilePosts.length}">${papers}
       </div>
     </section>` : ''}
